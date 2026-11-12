@@ -202,3 +202,32 @@ The tests cover:
 against the updater's Java code. Compile it together with `SkipHashedLines.java`
 and `FilterManifest.java` from imagej-updater, then feed it `relpath<TAB>abspath`
 lines.
+
+## Releasing
+
+Commits follow `type(scope): gitmoji description` (for example
+`fix(restore): 🐛 …` or `feat(lock): ✨ …`), and [git-cliff](https://git-cliff.org)
+builds the changelog from them using `cliff.toml`.
+
+1. Preview the next version and its changelog:
+
+   ```bash
+   git cliff --bumped-version          # e.g. v0.4.0
+   git cliff --unreleased --bump       # the notes that release will get
+   ```
+
+   The first release is `v0.3.0`, the version `fiji_lock.py` already reports
+   (`initial_tag` in `cliff.toml`).
+
+2. Set `TOOL_VERSION` in `fiji_lock.py` to that version and commit it as
+   `chore(version): 🔖 v0.4.0`. Version commits are left out of the changelog.
+3. Tag and push:
+
+   ```bash
+   git tag v0.4.0 && git push origin v0.4.0
+   ```
+
+The `Release` workflow checks that the tag matches `TOOL_VERSION`, runs the
+tests, and publishes a GitHub release with the changelog and `fiji_lock.py`
+attached. Every lockfile records the version that wrote it (`generator`), and
+a paper can link to the matching release.
