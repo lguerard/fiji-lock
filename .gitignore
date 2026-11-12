@@ -1,0 +1,11 @@
+# Local test data: restored installations, lockfiles and bundles made while
+# trying the tool (a project that *uses* fiji-lock commits its lockfile)
+Fiji-*/
+Fiji.app*/
+debug/
+fiji.lock.json
+fiji.local.zip
+*.part
+
+__pycache__/
+.ruff_cache/
