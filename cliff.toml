@@ -1,0 +1,78 @@
+[changelog]
+header = ""
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}\
+### {{ group }}
+
+{% for commit in commits %}\
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | split(pat="\n") | first }}
+{% endfor %}
+{% endfor %}\
+{% set contributor_commits = commits | unique(attribute="author.name") %}
+{% if contributor_commits | length > 0 %}
+### 👥 Contributors
+
+{% for c in contributor_commits %}\
+{% if c.github.username %}* @{{ c.github.username }}
+{% else %}* {{ c.author.name }}
+{% endif %}\
+{% endfor %}
+{% endif %}\
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+commit_preprocessors = [
+  # Commits written "<gitmoji> scope: description", without a type, read as
+  # the type their gitmoji stands for -- so they are grouped like the rest.
+  { pattern = "^🐛\\s*", replace = "fix: " },
+  { pattern = "^✨\\s*", replace = "feat: " },
+  { pattern = "^⚡\\x{FE0F}?\\s*", replace = "perf: " },
+  { pattern = "^📝\\s*", replace = "docs: " },
+  { pattern = "^♻\\x{FE0F}?\\s*", replace = "refactor: " },
+  { pattern = "^🔊\\s*", replace = "chore: " },
+  # Strip leading emoji from the description (after "type(scope): ")
+  # (U+FE0F, the variation selector ending emoji such as 🏗️ and ♻️, counts as a
+  # word character for the regex, so it is matched explicitly.)
+  { pattern = "(\\w+(?:\\([^)]*\\))?!?:\\s+)(?:[^\\w\\s]|\\x{FE0F})+\\s*", replace = "$1" },
+]
+commit_parsers = [
+  # Merge commits are noise in a changelog — the merged commits are already listed.
+  # Anchored to the message start so a commit that merely mentions "merge dev
+  # ... main" in its own text isn't swept up too.
+  { message = "^Merge ", skip = true },
+  { message = "(?i)^chore:\\s*merge dev.*main", skip = true },
+  { message = "^feat", group = "✨ Features" },
+  { message = "^fix", group = "🐛 Bug Fixes" },
+  { message = "^perf", group = "⚡ Performance" },
+  { message = "^refactor", group = "♻️ Refactoring" },
+  { message = "^docs", group = "📝 Documentation" },
+  { message = "^test", group = "✅ Tests" },
+  { message = "^build", group = "🏗️ Build" },
+  { message = "^ci", group = "👷 CI" },
+  { message = "^revert", group = "⏪ Reverts" },
+  { message = "^chore\\(version\\)|^chore: bump version", skip = true },
+  { message = "^chore", group = "🔧 Chores" },
+  { message = "^wip", skip = true },
+  { message = "^style", skip = true },
+  { message = ".*", group = "🔄 Other" },
+]
+filter_commits = true
+tag_pattern = "v[0-9].*"
+sort_commits = "oldest"
+
+[remote.github]
+owner = "imcf"
+repo = "fiji-lock"
+
+[bump]
+# 0.x releases: a feature bumps the minor version, a fix the patch version,
+# and a breaking change does not jump to 1.0 on its own.
+features_always_bump_minor = true
+breaking_always_bump_major = false
+# version of the first release: fiji_lock.py already reports 0.3.0
+initial_tag = "v0.3.0"

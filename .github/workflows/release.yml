@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The version is written into every lockfile (`generator`), so it must
+      # match the tag the release is published under.
+      - name: Check the tag matches TOOL_VERSION
+        run: |
+          version=$(python3 fiji_lock.py --version | awk '{print $2}')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME but fiji_lock.py says $version"
+            exit 1
+          fi
+
+      - name: Tests
+        run: bash tests/run_tests.sh
+
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@v4
+        id: cliff
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          # Lets git-cliff resolve commit authors to GitHub handles/avatars.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # fiji_lock.py is the whole tool: attaching it lets a paper point at the
+      # exact version it was locked and restored with.
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.cliff.outputs.content }}
+          files: fiji_lock.py
