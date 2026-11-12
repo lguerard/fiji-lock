@@ -107,7 +107,7 @@ name of Azul's download archive. For Java, `lock` does three things:
    the restored JDK is proven identical to the one you analysed with.
    `--platform all` installs the JDK for every platform.
 
-`--no-java` skips Java, for example when a container base image provides it.
+`--no-java` skips Java, for example when you provide a JDK yourself.
 JDKs that aren't standard Zulu builds (such as Fiji Stable's Java 8) are still
 fingerprinted, so `verify` can check them, but they can't be downloaded again.
 
@@ -118,18 +118,18 @@ fingerprinted, so `verify` can check them, but they can't be downloaded again.
 2. Commit `fiji.lock.json` (and the zip, if `lock` wrote one) next to your scripts.
    The lockfile is plain JSON, so changes show up clearly in diffs, and
    `fiji_lock.py diff` gives a summary of what changed.
-3. Build a container from it with `apptainer build fiji.sif fiji.def` or
-   `docker build .`. The build restores Fiji and then runs `verify`, so it fails
-   if anything differs from the lockfile.
-4. Archive the image and the lockfile on Zenodo for a DOI. The lockfile also
-   works as a human-readable record of the software environment for your
-   methods section.
+3. Anyone can rebuild the same Fiji with `restore`, check it with `verify`,
+   and run the analysis headless:
 
-Example run:
+   ```bash
+   python3 fiji_lock.py restore fiji.lock.json Fiji --local-bundle fiji.local.zip
+   Fiji/fiji-linux-x64 --headless --console --run analysis.groovy 'input="/data/img.tif"'
+   ```
 
-```bash
-apptainer run fiji.sif --console --run analysis.groovy 'input="/data/img.tif"'
-```
+4. Archive the lockfile (and the zip) with your scripts on Zenodo for a DOI. It
+   also works as a human-readable record of the software environment for your
+   methods section. Rebuilding needs the update sites to stay online; for an
+   archive that doesn't, also deposit the restored `Fiji` folder.
 
 ## Options worth knowing
 
@@ -155,8 +155,8 @@ apptainer run fiji.sif --console --run analysis.groovy 'input="/data/img.tif"'
 ## Limitations
 
 - Java can only be re-downloaded if it is a standard Azul Zulu build, which is
-  what Fiji Latest ships. For anything else, provide the JDK yourself (a
-  container base image, `JAVA_HOME` or `--java-home`) and restore with `--no-java`.
+  what Fiji Latest ships. For anything else, provide the JDK yourself
+  (`JAVA_HOME` or `--java-home`) and restore with `--no-java`.
 - Restoring depends on each update site keeping its history. Sites hosted on
   `sites.imagej.net` and the official sites do. Self-hosted sites might not.
   For those, mirror the files or rely on `--local-bundle`.
